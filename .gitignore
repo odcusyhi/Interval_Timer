@@ -1,0 +1,10 @@
+# Dependencies (Playwright, for the test suite only)
+node_modules/
+
+# Python bytecode from test/make-fixture.py
+__pycache__/
+*.py[cod]
+
+# OS cruft
+.DS_Store
+Thumbs.db
