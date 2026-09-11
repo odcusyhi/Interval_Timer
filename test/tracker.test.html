@@ -1,0 +1,165 @@
+<!DOCTYPE html><meta charset="utf-8"><title>tracker test</title>
+<canvas id="src" width="320" height="240"></canvas>
+<script type="module">
+import { HeadTracker, Calibration, RepCounter } from '../js/tracker.js';
+
+const src = document.getElementById('src');
+const c = src.getContext('2d');
+
+// Deterministic PRNG so the scene is identical across runs.
+let seed = 12345;
+function rnd() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+
+// Static textured background baked once (a "busy room": carpet + wall edges).
+const bgData = c.createImageData(320, 240);
+for (let y = 0; y < 240; y++) for (let x = 0; x < 320; x++) {
+  const i = (y * 320 + x) * 4;
+  const base = 70 + 30 * Math.sin(x * 0.05) + 18 * Math.sin(y * 0.11);
+  const n = rnd() * 26;
+  bgData.data[i] = bgData.data[i+1] = bgData.data[i+2] = Math.max(0, Math.min(255, base + n));
+  bgData.data[i+3] = 255;
+}
+const bgCanvas = document.createElement('canvas');
+bgCanvas.width = 320; bgCanvas.height = 240;
+bgCanvas.getContext('2d').putImageData(bgData, 0, 0);
+
+// A head: an ellipse with strong internal structure (eyes, nose, mouth, hair).
+function drawFrame(headY, skin) {
+  c.drawImage(bgCanvas, 0, 0);
+  const cx = 160, cy = headY, rw = 58, rh = 72;
+  c.save();
+  c.beginPath(); c.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2); c.clip();
+  c.fillStyle = skin; c.fillRect(cx - rw, cy - rh, rw * 2, rh * 2);
+  // hair
+  c.fillStyle = '#1a1008'; c.fillRect(cx - rw, cy - rh, rw * 2, 34);
+  // eyes
+  c.fillStyle = '#fff';
+  c.beginPath(); c.ellipse(cx - 22, cy - 8, 13, 8, 0, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(cx + 22, cy - 8, 13, 8, 0, 0, 7); c.fill();
+  c.fillStyle = '#120c08';
+  c.beginPath(); c.ellipse(cx - 22, cy - 8, 6, 6, 0, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(cx + 22, cy - 8, 6, 6, 0, 0, 7); c.fill();
+  // nose + mouth
+  c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 4;
+  c.beginPath(); c.moveTo(cx, cy - 4); c.lineTo(cx - 6, cy + 18); c.stroke();
+  c.beginPath(); c.moveTo(cx - 20, cy + 36); c.quadraticCurveTo(cx, cy + 48, cx + 20, cy + 36); c.stroke();
+  c.restore();
+  // sensor noise, so nothing depends on a perfectly clean image
+  const nd = c.getImageData(0, 0, 320, 240);
+  for (let i = 0; i < nd.data.length; i += 4) {
+    const n = (rnd() - 0.5) * 10;
+    nd.data[i] += n; nd.data[i+1] += n; nd.data[i+2] += n;
+  }
+  c.putImageData(nd, 0, 0);
+}
+
+function corr(a, b) {
+  const n = a.length;
+  const ma = a.reduce((s, v) => s + v, 0) / n, mb = b.reduce((s, v) => s + v, 0) / n;
+  let num = 0, da = 0, db = 0;
+  for (let i = 0; i < n; i++) {
+    const x = a[i] - ma, y = b[i] - mb;
+    num += x * y; da += x * x; db += y * y;
+  }
+  return (da && db) ? num / Math.sqrt(da * db) : 0;
+}
+
+// Sweep a push-up waveform: head travels between y=70 (top/arms extended)
+// and y=170 (bottom/chest down) with a 2-second period.
+function runSweep(skin, frames = 200) {
+  const tracker = new HeadTracker();
+  const truth = [], got = [];
+  for (let f = 0; f < frames; f++) {
+    const phase = (f / 60) * Math.PI * 2;
+    const headY = 120 + 50 * Math.sin(phase);
+    drawFrame(headY, skin);
+    const r = tracker.update(src);
+    if (f > 25) { truth.push(headY); got.push(r.y); }   // let the filter settle
+  }
+  return {
+    corr: corr(truth, got),
+    range: Math.max(...got) - Math.min(...got),
+    conf: got.length ? tracker.confidence : 0,
+  };
+}
+
+const results = {};
+// Deliberately spanning very light to very dark skin: a texture-based tracker
+// must not perform differently across them, which a skin-tone threshold would.
+results.light  = runSweep('#f1c9a5');
+results.medium = runSweep('#9c6b43');
+results.dark   = runSweep('#3d2415');
+
+// Static subject: head held still. Position must not drift.
+{
+  const tracker = new HeadTracker();
+  const ys = [];
+  for (let f = 0; f < 400; f++) {
+    drawFrame(100, '#9c6b43');
+    const r = tracker.update(src);
+    if (f > 60) ys.push(r.y);
+  }
+  results.staticDrift = Math.max(...ys) - Math.min(...ys);
+}
+
+// Empty scene: background only. Confidence must collapse.
+{
+  const tracker = new HeadTracker();
+  let last;
+  for (let f = 0; f < 80; f++) {
+    c.drawImage(bgCanvas, 0, 0);
+    last = tracker.update(src);
+  }
+  results.emptyConfidence = last.confidence;
+}
+
+// Calibration + rep counting over 5 clean reps.
+{
+  const cal = new Calibration();
+  const tracker = new HeadTracker();
+  // calibrate: sample top, then bottom
+  // Calibration samples a pose over ~1s and takes the median, the way the app
+  // does, rather than trusting one frame.
+  function samplePose(y, useReacquire) {
+    if (useReacquire) tracker.reacquire();
+    const s = [];
+    for (let f = 0; f < 45; f++) { drawFrame(y, '#9c6b43'); const r = tracker.update(src); if (f >= 15) s.push(r.y); }
+    s.sort((a, b) => a - b);
+    return s[s.length >> 1];
+  }
+  cal.top = samplePose(70, true);
+  cal.bottom = samplePose(170, true);
+  // And the same without reacquire, to prove a user who just moves between
+  // poses without any app prompt still gets a usable calibration.
+  const cal2 = new Calibration();
+  cal2.top = samplePose(70, false);
+  cal2.bottom = samplePose(170, false);
+  results.calSpanNoReacquire = Math.abs(cal2.bottom - cal2.top);
+  results.calReadyNoReacquire = cal2.ready;
+  results.calReady = cal.ready;
+  results.calSpan = Math.abs(cal.bottom - cal.top);
+
+  const counter = new RepCounter();
+  const mapped = [];
+  for (let f = 0; f < 300; f++) {
+    const headY = 120 + 50 * Math.sin((f / 60) * Math.PI * 2 - Math.PI / 2);
+    drawFrame(headY, '#9c6b43');
+    const p = cal.map(tracker.update(src).y);
+    mapped.push(p);
+    counter.update(p);
+  }
+  results.reps = counter.reps;
+  results.mappedMin = Math.min(...mapped);
+  results.mappedMax = Math.max(...mapped);
+}
+
+// RepCounter hysteresis: jitter around a threshold must not inflate the count.
+{
+  const rc = new RepCounter();
+  for (let i = 0; i < 200; i++) rc.update(0.68 + (i % 2 ? 0.002 : -0.002));
+  results.jitterReps = rc.reps;
+}
+
+window.__results = results;
+document.title = 'done';
+</script>

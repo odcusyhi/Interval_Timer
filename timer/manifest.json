@@ -1,0 +1,26 @@
+{
+  "name": "HIIT Interval Timer",
+  "short_name": "HIIT",
+  "description": "Interval timer for HIIT, Tabata and circuit training. Works offline.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["health", "fitness", "sports"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000000' width='100' height='100' rx='22'/%3E%3Ccircle cx='50' cy='54' r='30' fill='none' stroke='%2330d158' stroke-width='8'/%3E%3Cpath d='M50 38v18h13' fill='none' stroke='%2330d158' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='40' y='10' width='20' height='9' rx='4' fill='%2330d158'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000000' width='100' height='100'/%3E%3Ccircle cx='50' cy='54' r='26' fill='none' stroke='%2330d158' stroke-width='7'/%3E%3Cpath d='M50 40v16h11' fill='none' stroke='%2330d158' stroke-width='7' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='41' y='16' width='18' height='8' rx='4' fill='%2330d158'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
