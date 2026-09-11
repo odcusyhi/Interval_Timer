@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000' width='100' height='100' rx='22'/%3E%3Ccircle cx='50' cy='54' r='30' fill='none' stroke='%2330d158' stroke-width='8'/%3E%3Cpath d='M50 38v18h13' fill='none' stroke='%2330d158' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='40' y='10' width='20' height='9' rx='4' fill='%2330d158'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23000' width='100' height='100'/%3E%3Ccircle cx='50' cy='54' r='30' fill='none' stroke='%2330d158' stroke-width='8'/%3E%3Cpath d='M50 38v18h13' fill='none' stroke='%2330d158' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/%3E%3Crect x='40' y='10' width='20' height='9' rx='4' fill='%2330d158'/%3E%3C/svg%3E">
 <title>HIIT Timer</title>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -92,7 +94,10 @@ body {
 .workout-card:active { transform: scale(0.98); opacity: 0.7; }
 
 .workout-card .info { flex: 1; min-width: 0; cursor: pointer; }
-.workout-card .name { font-size: 17px; font-weight: 600; letter-spacing: -0.41px; }
+.workout-card .name {
+  font-size: 17px; font-weight: 600; letter-spacing: -0.41px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .workout-card .meta { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
 
 .btn-delete-card {
@@ -256,11 +261,22 @@ body {
 }
 .form-row.stacked .form-label { flex: none; }
 .form-row.stacked .time-stepper { align-self: flex-end; }
-.form-row .form-value {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+
+.name-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 17px;
+  letter-spacing: -0.41px;
+  text-align: right;
+  min-width: 0;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
 }
+.name-input::placeholder { color: var(--text-tertiary); }
 
 .stepper {
   display: flex;
@@ -283,16 +299,29 @@ body {
   align-items: center;
   justify-content: center;
   transition: background 0.1s;
+  flex-shrink: 0;
 }
 .stepper button:active { background: rgba(255,255,255,0.08); }
-.stepper .divider { width: 0.5px; height: 18px; background: var(--separator); }
-.stepper span {
+.stepper .divider { width: 0.5px; height: 18px; background: var(--separator); flex-shrink: 0; }
+.stepper .num {
+  width: 34px;
   min-width: 34px;
   text-align: center;
+  font-family: inherit;
   font-size: 17px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  background: none;
+  border: none;
+  color: var(--text);
+  outline: none;
+  padding: 8px 0;
+  user-select: text;
+  -webkit-user-select: text;
 }
+.stepper .num:focus { color: var(--tint); }
+.stepper .num::-webkit-outer-spin-button,
+.stepper .num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 .time-stepper {
   display: flex;
@@ -300,8 +329,32 @@ body {
   gap: 6px;
 }
 .time-stepper .stepper button { width: 36px; }
-.time-stepper .stepper span { min-width: 30px; }
+.time-stepper .stepper .num { width: 30px; min-width: 30px; }
 .time-stepper .time-unit { font-size: 13px; color: var(--text-secondary); min-width: 20px; text-align: center; }
+
+/* ── Toggle ── */
+.toggle {
+  width: 51px; height: 31px;
+  border-radius: 16px;
+  background: var(--bg-grouped);
+  border: none;
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 27px; height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s cubic-bezier(0.2, 0, 0.2, 1);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.toggle.on { background: var(--green); }
+.toggle.on::after { transform: translateX(20px); }
 
 .editor-bottom {
   padding: 12px 0;
@@ -314,48 +367,134 @@ body {
   box-shadow: 0 -0.5px 0 0 var(--separator);
 }
 
+.total-line {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding-bottom: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Timer Screen ── */
 #timer {
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   padding: 20px;
-  padding-top: calc(var(--safe-top) + 40px);
-  padding-bottom: calc(var(--safe-bottom) + 30px);
+  padding-top: calc(var(--safe-top) + 20px);
+  padding-bottom: calc(var(--safe-bottom) + 20px);
   transition: background-color 0.4s ease;
   position: relative;
 }
 
-.timer-phase {
+.timer-top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.round-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
+}
+.round-dots .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.22);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.round-dots .dot.done { background: rgba(255,255,255,0.55); }
+.round-dots .dot.current { background: #fff; transform: scale(1.5); }
+
+.timer-total {
   font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.24px;
+}
+
+/* Ring + big readout */
+.ring-wrap {
+  position: relative;
+  width: min(86vw, 52vh, 420px);
+  aspect-ratio: 1;
+  max-width: 100%;
+  flex-shrink: 1;
+  cursor: pointer;
+}
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.12);
+  stroke-width: 4;
+}
+.ring-fg {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 289.03;
+  stroke-dashoffset: 0;
+}
+
+.timer-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 12%;
+}
+
+.timer-phase {
+  font-size: clamp(13px, 4.2vw, 22px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 3px;
-  opacity: 0.9;
+  opacity: 0.95;
+  white-space: nowrap;
 }
 
 .timer-display {
-  font-size: min(28vw, 140px);
+  font-size: min(24vw, 15vh, 150px);
   font-weight: 200;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  margin: 24px 0;
   letter-spacing: -2px;
 }
 
 .timer-info {
-  font-size: 17px;
+  font-size: clamp(13px, 3.8vw, 19px);
   font-weight: 500;
   opacity: 0.7;
-  margin-bottom: 48px;
   text-align: center;
   letter-spacing: -0.41px;
+  white-space: nowrap;
+}
+
+.timer-bottom {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .timer-controls {
   display: flex;
-  gap: 16px;
+  gap: 14px;
+  align-items: center;
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
 }
 
 .btn-timer {
@@ -367,43 +506,78 @@ body {
   font-weight: 600;
   letter-spacing: -0.41px;
   cursor: pointer;
-  color: white;
-  min-height: 50px;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+  min-height: 54px;
+}
+.btn-timer:active { transform: scale(0.96); opacity: 0.8; }
+.btn-timer.primary { background: #fff; color: #000; }
+.btn-timer.secondary { background: rgba(255,255,255,0.16); color: #fff; }
+
+.btn-skip {
+  width: 54px; height: 54px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
-.btn-timer:active { transform: scale(0.95); opacity: 0.8; }
-.btn-timer.primary { background: rgba(255,255,255,0.2); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.btn-timer.secondary { background: rgba(255,255,255,0.08); }
+.btn-skip:active { transform: scale(0.9); opacity: 0.7; }
+.btn-skip:disabled { opacity: 0.25; }
 
-.timer-progress {
-  position: absolute;
-  bottom: 0; left: 0;
-  height: 3px;
-  background: rgba(255,255,255,0.4);
-  transition: width 0.1s linear;
-  border-radius: 3px;
+.btn-stop {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.65);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.24px;
+  cursor: pointer;
+  padding: 6px 16px;
 }
+.btn-stop:active { opacity: 0.5; }
+
+.paused-badge {
+  position: absolute;
+  top: calc(var(--safe-top) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 50px;
+  display: none;
+}
+#timer.is-paused .paused-badge { display: block; }
+#timer.is-paused .ring-wrap { opacity: 0.55; }
 
 /* ── Countdown Overlay ── */
 .countdown-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.92);
+  background: #000;
   display: none;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
   z-index: 100;
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
 }
 .countdown-overlay.active { display: flex; }
+
 .countdown-number {
   font-size: min(45vw, 180px);
   font-weight: 200;
   color: var(--yellow);
   animation: countPulse 0.6s cubic-bezier(0.2, 0, 0.2, 1);
   letter-spacing: -4px;
+  font-variant-numeric: tabular-nums;
 }
 .countdown-label {
   font-size: 17px;
@@ -412,8 +586,20 @@ body {
   margin-top: 12px;
   letter-spacing: -0.41px;
 }
+.countdown-cancel {
+  position: absolute;
+  bottom: calc(var(--safe-bottom) + 40px);
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 15px;
+  cursor: pointer;
+  padding: 10px 20px;
+}
+
 @keyframes countPulse {
-  0% { transform: scale(1.4); opacity: 0.3; }
+  0% { transform: scale(1.4); opacity: 0; }
+  40% { transform: scale(1); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
@@ -421,6 +607,8 @@ body {
 .phase-work { background: #0a2e14; }
 .phase-rest { background: #2e0a0a; }
 .phase-setrest { background: #0a1a2e; }
+.phase-warmup { background: #2e2000; }
+.phase-cooldown { background: #002e2a; }
 .phase-complete { background: #1a0a2e; }
 </style>
 </head>
@@ -436,25 +624,33 @@ body {
     </div>
   </div>
   <div class="editor-form">
+    <div class="section-header">Name</div>
+    <div class="form-group">
+      <div class="form-row">
+        <div class="form-label">Title</div>
+        <input class="name-input" id="wName" type="text" maxlength="40" placeholder="Optional" autocomplete="off">
+      </div>
+    </div>
+
     <div class="section-header">Intervals</div>
     <div class="form-group">
       <div class="form-row">
         <div class="form-label">Work</div>
         <div class="time-stepper">
           <div class="stepper">
-            <button onclick="adj('wWorkMin',-1)">&#8722;</button>
+            <button data-step="wWorkMin,-1">&#8722;</button>
             <div class="divider"></div>
-            <span id="wWorkMin">0</span>
+            <input class="num" id="wWorkMin" type="tel" inputmode="numeric" value="0">
             <div class="divider"></div>
-            <button onclick="adj('wWorkMin',1)">+</button>
+            <button data-step="wWorkMin,1">+</button>
           </div>
           <span class="time-unit">min</span>
           <div class="stepper">
-            <button onclick="adj('wWorkSec',-5)">&#8722;</button>
+            <button data-step="wWorkSec,-5">&#8722;</button>
             <div class="divider"></div>
-            <span id="wWorkSec">30</span>
+            <input class="num" id="wWorkSec" type="tel" inputmode="numeric" value="30">
             <div class="divider"></div>
-            <button onclick="adj('wWorkSec',5)">+</button>
+            <button data-step="wWorkSec,5">+</button>
           </div>
           <span class="time-unit">sec</span>
         </div>
@@ -463,19 +659,19 @@ body {
         <div class="form-label">Rest</div>
         <div class="time-stepper">
           <div class="stepper">
-            <button onclick="adj('wRestMin',-1)">&#8722;</button>
+            <button data-step="wRestMin,-1">&#8722;</button>
             <div class="divider"></div>
-            <span id="wRestMin">0</span>
+            <input class="num" id="wRestMin" type="tel" inputmode="numeric" value="0">
             <div class="divider"></div>
-            <button onclick="adj('wRestMin',1)">+</button>
+            <button data-step="wRestMin,1">+</button>
           </div>
           <span class="time-unit">min</span>
           <div class="stepper">
-            <button onclick="adj('wRestSec',-5)">&#8722;</button>
+            <button data-step="wRestSec,-5">&#8722;</button>
             <div class="divider"></div>
-            <span id="wRestSec">15</span>
+            <input class="num" id="wRestSec" type="tel" inputmode="numeric" value="15">
             <div class="divider"></div>
-            <button onclick="adj('wRestSec',5)">+</button>
+            <button data-step="wRestSec,5">+</button>
           </div>
           <span class="time-unit">sec</span>
         </div>
@@ -487,40 +683,86 @@ body {
       <div class="form-row">
         <div class="form-label">Rounds</div>
         <div class="stepper">
-          <button onclick="adj('wRounds',-1)">&#8722;</button>
+          <button data-step="wRounds,-1">&#8722;</button>
           <div class="divider"></div>
-          <span id="wRounds">8</span>
+          <input class="num" id="wRounds" type="tel" inputmode="numeric" value="8">
           <div class="divider"></div>
-          <button onclick="adj('wRounds',1)">+</button>
+          <button data-step="wRounds,1">+</button>
         </div>
       </div>
       <div class="form-row">
         <div class="form-label">Sets</div>
         <div class="stepper">
-          <button onclick="adj('wSets',-1)">&#8722;</button>
+          <button data-step="wSets,-1">&#8722;</button>
           <div class="divider"></div>
-          <span id="wSets">1</span>
+          <input class="num" id="wSets" type="tel" inputmode="numeric" value="1">
           <div class="divider"></div>
-          <button onclick="adj('wSets',1)">+</button>
+          <button data-step="wSets,1">+</button>
         </div>
       </div>
       <div class="form-row stacked">
         <div class="form-label">Rest Between Sets</div>
         <div class="time-stepper">
           <div class="stepper">
-            <button onclick="adj('wSetRestMin',-1)">&#8722;</button>
+            <button data-step="wSetRestMin,-1">&#8722;</button>
             <div class="divider"></div>
-            <span id="wSetRestMin">1</span>
+            <input class="num" id="wSetRestMin" type="tel" inputmode="numeric" value="1">
             <div class="divider"></div>
-            <button onclick="adj('wSetRestMin',1)">+</button>
+            <button data-step="wSetRestMin,1">+</button>
           </div>
           <span class="time-unit">min</span>
           <div class="stepper">
-            <button onclick="adj('wSetRestSec',-5)">&#8722;</button>
+            <button data-step="wSetRestSec,-5">&#8722;</button>
             <div class="divider"></div>
-            <span id="wSetRestSec">0</span>
+            <input class="num" id="wSetRestSec" type="tel" inputmode="numeric" value="0">
             <div class="divider"></div>
-            <button onclick="adj('wSetRestSec',5)">+</button>
+            <button data-step="wSetRestSec,5">+</button>
+          </div>
+          <span class="time-unit">sec</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header">Warm-up &amp; Cool-down</div>
+    <div class="form-group">
+      <div class="form-row stacked">
+        <div class="form-label">Warm-up</div>
+        <div class="time-stepper">
+          <div class="stepper">
+            <button data-step="wWarmMin,-1">&#8722;</button>
+            <div class="divider"></div>
+            <input class="num" id="wWarmMin" type="tel" inputmode="numeric" value="0">
+            <div class="divider"></div>
+            <button data-step="wWarmMin,1">+</button>
+          </div>
+          <span class="time-unit">min</span>
+          <div class="stepper">
+            <button data-step="wWarmSec,-5">&#8722;</button>
+            <div class="divider"></div>
+            <input class="num" id="wWarmSec" type="tel" inputmode="numeric" value="0">
+            <div class="divider"></div>
+            <button data-step="wWarmSec,5">+</button>
+          </div>
+          <span class="time-unit">sec</span>
+        </div>
+      </div>
+      <div class="form-row stacked">
+        <div class="form-label">Cool-down</div>
+        <div class="time-stepper">
+          <div class="stepper">
+            <button data-step="wCoolMin,-1">&#8722;</button>
+            <div class="divider"></div>
+            <input class="num" id="wCoolMin" type="tel" inputmode="numeric" value="0">
+            <div class="divider"></div>
+            <button data-step="wCoolMin,1">+</button>
+          </div>
+          <span class="time-unit">min</span>
+          <div class="stepper">
+            <button data-step="wCoolSec,-5">&#8722;</button>
+            <div class="divider"></div>
+            <input class="num" id="wCoolSec" type="tel" inputmode="numeric" value="0">
+            <div class="divider"></div>
+            <button data-step="wCoolSec,5">+</button>
           </div>
           <span class="time-unit">sec</span>
         </div>
@@ -532,19 +774,36 @@ body {
       <div class="form-row">
         <div class="form-label">Countdown</div>
         <div class="stepper">
-          <button onclick="adj('wCountdown',-1)">&#8722;</button>
+          <button data-step="wCountdown,-1">&#8722;</button>
           <div class="divider"></div>
-          <span id="wCountdown">5</span>
+          <input class="num" id="wCountdown" type="tel" inputmode="numeric" value="5">
           <div class="divider"></div>
-          <button onclick="adj('wCountdown',1)">+</button>
+          <button data-step="wCountdown,1">+</button>
         </div>
+      </div>
+    </div>
+
+    <div class="section-header">Cues</div>
+    <div class="form-group">
+      <div class="form-row">
+        <div class="form-label">Beeps</div>
+        <button class="toggle" id="tgSound" onclick="toggleSetting('sound', this)"></button>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Spoken cues</div>
+        <button class="toggle" id="tgVoice" onclick="toggleSetting('voice', this)"></button>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Vibration</div>
+        <button class="toggle" id="tgVibe" onclick="toggleSetting('vibe', this)"></button>
       </div>
     </div>
   </div>
   <div class="editor-bottom">
+    <div class="total-line" id="editorTotal"></div>
     <button class="btn-filled green" onclick="saveAndStart()">&#9654;&#xFE0E; Start Workout</button>
     <div style="display:flex; gap:10px">
-      <button class="btn-filled gray" style="flex:1" onclick="saveWorkout()">Save</button>
+      <button class="btn-filled gray" id="btnSave" style="flex:1" onclick="saveWorkout()">Save</button>
       <button class="btn-filled red" id="btnDelete" style="flex:1; display:none" onclick="deleteFromEditor()">Delete</button>
     </div>
   </div>
@@ -564,61 +823,159 @@ body {
 
 <!-- TIMER -->
 <div id="timer" class="screen">
-  <div class="timer-phase" id="timerPhase">GET READY</div>
-  <div class="timer-display" id="timerDisplay">0:00</div>
-  <div class="timer-info" id="timerInfo"></div>
-  <div class="timer-controls" id="timerControls">
-    <button class="btn-timer primary" id="btnPlayPause" onclick="togglePause()">Pause</button>
-    <button class="btn-timer secondary" onclick="stopTimer()">Stop</button>
+  <div class="paused-badge">Paused</div>
+
+  <div class="timer-top">
+    <div class="timer-total" id="timerTotal"></div>
+    <div class="round-dots" id="roundDots"></div>
   </div>
-  <div class="timer-progress" id="timerProgress"></div>
+
+  <div class="ring-wrap" id="ringWrap" onclick="togglePause()">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="ring-bg" cx="50" cy="50" r="46"></circle>
+      <circle class="ring-fg" id="ringFg" cx="50" cy="50" r="46"></circle>
+    </svg>
+    <div class="timer-center">
+      <div class="timer-phase" id="timerPhase">GET READY</div>
+      <div class="timer-display" id="timerDisplay">0:00</div>
+      <div class="timer-info" id="timerInfo"></div>
+    </div>
+  </div>
+
+  <div class="timer-bottom">
+    <div class="timer-controls">
+      <button class="btn-skip" id="btnPrev" onclick="skipPhase(-1)" title="Previous">&#9664;&#9664;</button>
+      <button class="btn-timer primary" id="btnPlayPause" onclick="togglePause()">Pause</button>
+      <button class="btn-skip" id="btnNext" onclick="skipPhase(1)" title="Next">&#9654;&#9654;</button>
+    </div>
+    <button class="btn-stop" onclick="stopTimer()">End workout</button>
+  </div>
 </div>
 
 <!-- COUNTDOWN OVERLAY -->
 <div class="countdown-overlay" id="countdownOverlay">
   <div class="countdown-number" id="countdownNumber">5</div>
   <div class="countdown-label">Get Ready</div>
+  <button class="countdown-cancel" onclick="cancelCountdown()">Cancel</button>
 </div>
 
 <script>
+'use strict';
+
 // ── Storage ──
 const STORAGE_KEY = 'hiit_workouts';
+const SETTINGS_KEY = 'hiit_settings';
+
 function loadWorkouts() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
-  catch { return []; }
+  try {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(list) ? list.map(normalizeWorkout) : [];
+  } catch { return []; }
 }
-function saveWorkouts(list) { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); }
+function saveWorkouts(list) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch {}
+}
+
+// Workouts saved by earlier versions have no warm-up/cool-down/name fields.
+function normalizeWorkout(w) {
+  return {
+    id: w.id,
+    name: typeof w.name === 'string' ? w.name : '',
+    workSec: num(w.workSec, 30), restSec: num(w.restSec, 15),
+    rounds: num(w.rounds, 8), sets: num(w.sets, 1),
+    setRestSec: num(w.setRestSec, 60), countdown: num(w.countdown, 5),
+    warmupSec: num(w.warmupSec, 0), cooldownSec: num(w.cooldownSec, 0),
+  };
+}
+function num(v, fallback) { const n = parseInt(v, 10); return Number.isFinite(n) ? n : fallback; }
+
+const defaultSettings = { sound: true, voice: false, vibe: true };
+let settings = (() => {
+  try { return Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem(SETTINGS_KEY)) || {}); }
+  catch { return Object.assign({}, defaultSettings); }
+})();
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch {}
+}
+function toggleSetting(key, btn) {
+  settings[key] = !settings[key];
+  btn.classList.toggle('on', settings[key]);
+  saveSettings();
+  if (settings[key]) {
+    if (key === 'sound') beep(880, 0.12, 0.4);
+    if (key === 'voice') speak('Voice on');
+    if (key === 'vibe') buzz(30);
+  }
+}
+function renderSettings() {
+  document.getElementById('tgSound').classList.toggle('on', settings.sound);
+  document.getElementById('tgVoice').classList.toggle('on', settings.voice);
+  document.getElementById('tgVibe').classList.toggle('on', settings.vibe);
+}
 
 // ── Audio ──
-let audioCtx;
+let audioCtx = null;
 function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (!audioCtx) {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    audioCtx = new Ctx();
+  }
   return audioCtx;
 }
+// Must be called from a user gesture or iOS keeps the context suspended.
+function unlockAudio() {
+  const ctx = getAudio();
+  if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+
 function beep(freq, duration, vol = 0.3) {
+  if (!settings.sound) return;
   try {
     const ctx = getAudio();
+    if (!ctx) return;
+    const t = ctx.currentTime;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
-    osc.frequency.value = freq; osc.type = 'sine';
-    gain.gain.value = vol;
-    osc.start(ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.stop(ctx.currentTime + duration);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, t);
+    // Short attack avoids the click a hard gain jump produces.
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
   } catch {}
 }
-function beepCountdown() { beep(880, 0.15, 0.5); }
-function beepGo() { beep(1200, 0.4, 0.7); }
+function buzz(pattern) {
+  if (!settings.vibe) return;
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch {}
+}
+function speak(text) {
+  if (!settings.voice) return;
+  try {
+    if (!('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.15; u.volume = 1;
+    speechSynthesis.speak(u);
+  } catch {}
+}
+
+function beepCountdown() { beep(880, 0.14, 0.5); buzz(20); }
+function beepGo() { beep(1200, 0.4, 0.7); buzz([0, 60, 40, 60]); }
 function beepPhaseChange() {
-  beep(440, 0.2, 0.6);
-  setTimeout(() => beep(660, 0.3, 0.6), 150);
+  beep(440, 0.18, 0.6);
+  setTimeout(() => beep(660, 0.28, 0.6), 150);
+  buzz([0, 80, 50, 80]);
 }
 function beepComplete() {
   beep(880, 0.2, 0.6);
   setTimeout(() => beep(1100, 0.2, 0.6), 200);
   setTimeout(() => beep(1320, 0.2, 0.6), 400);
   setTimeout(() => beep(1760, 0.4, 0.7), 600);
+  buzz([0, 120, 80, 120, 80, 240]);
 }
 
 // ── Navigation ──
@@ -628,74 +985,153 @@ function showScreen(id) {
 }
 function showLibrary() { showScreen('library'); renderWorkoutList(); }
 
-function showEditor(workout = null) {
+function showEditor(workout) {
   showScreen('editor');
   editingId = workout ? workout.id : null;
   document.getElementById('editorTitle').textContent = workout ? 'Edit Workout' : 'New Workout';
   document.getElementById('editorBack').style.display = workout ? '' : 'none';
   document.getElementById('btnDelete').style.display = workout ? '' : 'none';
-  const w = workout || { workSec:30, restSec:15, rounds:8, sets:1, setRestSec:60, countdown:5 };
-  document.getElementById('wWorkMin').textContent = Math.floor(w.workSec / 60);
-  document.getElementById('wWorkSec').textContent = w.workSec % 60;
-  document.getElementById('wRestMin').textContent = Math.floor(w.restSec / 60);
-  document.getElementById('wRestSec').textContent = w.restSec % 60;
-  document.getElementById('wRounds').textContent = w.rounds;
-  document.getElementById('wSets').textContent = w.sets;
-  document.getElementById('wSetRestMin').textContent = Math.floor(w.setRestSec / 60);
-  document.getElementById('wSetRestSec').textContent = w.setRestSec % 60;
-  document.getElementById('wCountdown').textContent = w.countdown;
+
+  const w = workout || normalizeWorkout({});
+  document.getElementById('wName').value = w.name || '';
+  setNum('wWorkMin', Math.floor(w.workSec / 60));   setNum('wWorkSec', w.workSec % 60);
+  setNum('wRestMin', Math.floor(w.restSec / 60));   setNum('wRestSec', w.restSec % 60);
+  setNum('wRounds', w.rounds);
+  setNum('wSets', w.sets);
+  setNum('wSetRestMin', Math.floor(w.setRestSec / 60)); setNum('wSetRestSec', w.setRestSec % 60);
+  setNum('wWarmMin', Math.floor(w.warmupSec / 60));  setNum('wWarmSec', w.warmupSec % 60);
+  setNum('wCoolMin', Math.floor(w.cooldownSec / 60)); setNum('wCoolSec', w.cooldownSec % 60);
+  setNum('wCountdown', w.countdown);
+
   document.querySelector('.editor-form').scrollTop = 0;
+  renderSettings();
   updateSavedCount();
+  updateEditorTotal();
 }
 
 // ── Number Inputs ──
 const limits = {
-  wWorkMin:[0,59], wWorkSec:[0,55], wRestMin:[0,59], wRestSec:[0,55],
-  wRounds:[1,99], wSets:[1,20], wSetRestMin:[0,59], wSetRestSec:[0,55],
-  wCountdown:[0,15]
+  wWorkMin: [0, 59], wWorkSec: [0, 59],
+  wRestMin: [0, 59], wRestSec: [0, 59],
+  wRounds: [1, 99], wSets: [1, 20],
+  wSetRestMin: [0, 59], wSetRestSec: [0, 59],
+  wWarmMin: [0, 59], wWarmSec: [0, 59],
+  wCoolMin: [0, 59], wCoolSec: [0, 59],
+  wCountdown: [0, 60],
 };
-function adj(id, delta) {
-  const el = document.getElementById(id);
-  let v = parseInt(el.textContent) + delta;
+function getNum(id) {
   const [mn, mx] = limits[id];
-  el.textContent = Math.max(mn, Math.min(mx, v));
+  const v = parseInt(document.getElementById(id).value, 10);
+  return Number.isFinite(v) ? Math.max(mn, Math.min(mx, v)) : mn;
 }
+function setNum(id, v) {
+  const [mn, mx] = limits[id];
+  document.getElementById(id).value = Math.max(mn, Math.min(mx, Math.round(v)));
+}
+function adj(id, delta) {
+  setNum(id, getNum(id) + delta);
+  updateEditorTotal();
+}
+
+// Steppers: tap to nudge, press and hold to repeat.
+document.querySelectorAll('[data-step]').forEach(btn => {
+  const [id, deltaStr] = btn.dataset.step.split(',');
+  const delta = parseInt(deltaStr, 10);
+  let holdTimer = null, repeatTimer = null;
+  const stop = () => { clearTimeout(holdTimer); clearInterval(repeatTimer); holdTimer = repeatTimer = null; };
+  btn.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    adj(id, delta);
+    holdTimer = setTimeout(() => { repeatTimer = setInterval(() => adj(id, delta), 80); }, 450);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => btn.addEventListener(ev, stop));
+});
+
+// Typed values are clamped when the field loses focus, not on every keystroke,
+// so a half-typed "1" on the way to "15" isn't rewritten under the user.
+document.querySelectorAll('.num').forEach(input => {
+  input.addEventListener('focus', () => input.select());
+  input.addEventListener('blur', () => { setNum(input.id, getNum(input.id)); updateEditorTotal(); });
+  input.addEventListener('input', updateEditorTotal);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+});
 
 // ── Editor ──
 let editingId = null;
 
 function readEditorValues() {
   return {
-    workSec: parseInt(document.getElementById('wWorkMin').textContent) * 60 + parseInt(document.getElementById('wWorkSec').textContent),
-    restSec: parseInt(document.getElementById('wRestMin').textContent) * 60 + parseInt(document.getElementById('wRestSec').textContent),
-    rounds: parseInt(document.getElementById('wRounds').textContent),
-    sets: parseInt(document.getElementById('wSets').textContent),
-    setRestSec: parseInt(document.getElementById('wSetRestMin').textContent) * 60 + parseInt(document.getElementById('wSetRestSec').textContent),
-    countdown: parseInt(document.getElementById('wCountdown').textContent),
+    name: document.getElementById('wName').value.trim().slice(0, 40),
+    workSec: getNum('wWorkMin') * 60 + getNum('wWorkSec'),
+    restSec: getNum('wRestMin') * 60 + getNum('wRestSec'),
+    rounds: getNum('wRounds'),
+    sets: getNum('wSets'),
+    setRestSec: getNum('wSetRestMin') * 60 + getNum('wSetRestSec'),
+    warmupSec: getNum('wWarmMin') * 60 + getNum('wWarmSec'),
+    cooldownSec: getNum('wCoolMin') * 60 + getNum('wCoolSec'),
+    countdown: getNum('wCountdown'),
   };
 }
 
 function formatTime(sec) {
-  const m = Math.floor(sec / 60);
+  sec = Math.max(0, Math.round(sec));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
   const s = sec % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return h > 0
+    ? `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    : `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// The single source of truth for what a workout actually runs. Total duration is
+// derived from this list so the advertised total always matches the real schedule.
+function buildPhases(w) {
+  const p = [];
+  if (w.warmupSec > 0) p.push({ type: 'warmup', duration: w.warmupSec });
+  for (let s = 1; s <= w.sets; s++) {
+    for (let r = 1; r <= w.rounds; r++) {
+      p.push({ type: 'work', duration: w.workSec, round: r, set: s });
+      const lastRound = r === w.rounds;
+      const lastSet = s === w.sets;
+      if (!lastRound) {
+        if (w.restSec > 0) p.push({ type: 'rest', duration: w.restSec, round: r, set: s });
+      } else if (!lastSet) {
+        if (w.setRestSec > 0) p.push({ type: 'setRest', duration: w.setRestSec, set: s });
+        else if (w.restSec > 0) p.push({ type: 'rest', duration: w.restSec, round: r, set: s });
+      }
+    }
+  }
+  if (w.cooldownSec > 0) p.push({ type: 'cooldown', duration: w.cooldownSec });
+  return p;
+}
 function totalDuration(w) {
-  return (w.workSec + w.restSec) * w.rounds * w.sets + w.setRestSec * Math.max(0, w.sets - 1);
+  return buildPhases(w).reduce((sum, p) => sum + p.duration, 0);
+}
+
+function describeWorkout(w) {
+  const base = `${formatTime(w.workSec)} / ${formatTime(w.restSec)} · ${w.rounds}R`;
+  return w.sets > 1 ? `${base} × ${w.sets}S` : base;
+}
+
+function updateEditorTotal() {
+  const v = readEditorValues();
+  const el = document.getElementById('editorTotal');
+  if (v.workSec === 0) { el.textContent = 'Set a work interval to start'; return; }
+  const rounds = v.rounds * v.sets;
+  el.textContent = `${formatTime(totalDuration(v))} total · ${rounds} interval${rounds === 1 ? '' : 's'}`;
 }
 
 function persistWorkout(v) {
   if (v.workSec === 0) { alert('Work time must be greater than 0'); return null; }
-  const name = `${formatTime(v.workSec)} / ${formatTime(v.restSec)}`;
   const list = loadWorkouts();
   let id;
   if (editingId) {
     const idx = list.findIndex(w => w.id === editingId);
-    if (idx >= 0) { Object.assign(list[idx], { name, ...v }); id = editingId; }
-  } else {
-    id = Date.now().toString(36);
-    list.push({ id, name, ...v });
+    if (idx >= 0) { list[idx] = Object.assign({}, list[idx], v); id = editingId; }
+  }
+  if (!id) {
+    id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    list.push(Object.assign({ id }, v));
   }
   saveWorkouts(list);
   return id;
@@ -703,20 +1139,17 @@ function persistWorkout(v) {
 
 function saveWorkout() {
   const id = persistWorkout(readEditorValues());
-  if (id) {
-    editingId = id;
-    updateSavedCount();
-    // Flash the save button to confirm
-    const btn = document.querySelector('.btn-filled.gray');
-    btn.textContent = 'Saved!';
-    btn.style.color = 'var(--green)';
-    setTimeout(() => { btn.textContent = 'Save'; btn.style.color = ''; }, 1200);
-  }
+  if (!id) return;
+  editingId = id;
+  updateSavedCount();
+  const btn = document.getElementById('btnSave');
+  btn.textContent = 'Saved!';
+  btn.style.color = 'var(--green)';
+  setTimeout(() => { btn.textContent = 'Save'; btn.style.color = ''; }, 1200);
 }
 
 function saveAndStart() {
-  const v = readEditorValues();
-  const id = persistWorkout(v);
+  const id = persistWorkout(readEditorValues());
   if (id) startWorkout(id);
 }
 
@@ -729,14 +1162,12 @@ function deleteFromEditor() {
     return;
   }
   delete btn.dataset.armed;
-  if (editingId) {
-    saveWorkouts(loadWorkouts().filter(w => w.id !== editingId));
-  }
+  if (editingId) saveWorkouts(loadWorkouts().filter(w => w.id !== editingId));
   showEditor();
 }
 
 function editWorkout(id) {
-  const w = loadWorkouts().find(w => w.id === id);
+  const w = loadWorkouts().find(x => x.id === id);
   if (w) showEditor(w);
 }
 
@@ -753,6 +1184,10 @@ function deleteWorkoutCard(id, btn) {
 }
 
 // ── Workout List ──
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function renderWorkoutList() {
   const list = loadWorkouts();
   const container = document.getElementById('workoutList');
@@ -762,170 +1197,357 @@ function renderWorkoutList() {
     return;
   }
 
-  container.innerHTML = list.map(w => `
+  container.innerHTML = list.map(w => {
+    const title = w.name ? escapeHtml(w.name) : describeWorkout(w);
+    const meta = w.name
+      ? `${describeWorkout(w)} · ${formatTime(totalDuration(w))}`
+      : `${formatTime(totalDuration(w))} total`;
+    return `
     <div class="workout-card">
       <button class="btn-delete-card" onclick="deleteWorkoutCard('${w.id}', this)" title="Delete">&#10005;</button>
       <div class="info" onclick="editWorkout('${w.id}')">
-        <div class="name">${formatTime(w.workSec)} / ${formatTime(w.restSec)} &middot; ${w.rounds}R${w.sets > 1 ? ' &times; ' + w.sets + 'S' : ''}</div>
-        <div class="meta">${formatTime(totalDuration(w))} total</div>
+        <div class="name">${title}</div>
+        <div class="meta">${meta}</div>
       </div>
       <button class="btn-play" onclick="startWorkout('${w.id}')" title="Start">&#9654;&#xFE0E;</button>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ── Timer Engine ──
-let timerState = null, timerRaf = null, paused = false, pauseStart = 0, totalPaused = 0;
+//
+// Time is tracked as a single monotonic elapsed value for the whole workout
+// (`base` seconds banked + time since `t0` while running), and the current phase
+// is resolved by looking that value up in a cumulative offset table.
+//
+// This matters: requestAnimationFrame is throttled or stopped outright when the
+// tab is hidden or the screen locks. A per-phase timer that resets its origin on
+// every transition loses the overrun and replays each skipped phase one frame at
+// a time. Deriving the phase from absolute elapsed time means backgrounding the
+// app for two minutes lands on exactly the right phase with the right time left.
+
+const RING_CIRCUMFERENCE = 2 * Math.PI * 46;
+
+let st = null;            // active timer state, or null
+let rafId = null;
+let countdownTimer = null;
 
 function startWorkout(id) {
-  const w = loadWorkouts().find(w => w.id === id);
+  const w = loadWorkouts().find(x => x.id === id);
   if (!w) return;
-  try { const ctx = getAudio(); if (ctx.state === 'suspended') ctx.resume(); } catch {}
-  if (w.countdown > 0) runCountdown(w.countdown, () => runTimer(w));
-  else runTimer(w);
+  const phases = buildPhases(w);
+  if (phases.length === 0) return;
+
+  unlockAudio();
+  requestWakeLock();
+
+  const begin = () => runTimer(w, phases);
+  if (w.countdown > 0) runCountdown(w.countdown, begin);
+  else begin();
 }
 
 function runCountdown(secs, onDone) {
   const overlay = document.getElementById('countdownOverlay');
   const numEl = document.getElementById('countdownNumber');
   overlay.classList.add('active');
-  let remaining = secs;
-  numEl.textContent = remaining;
-  beepCountdown();
-  const iv = setInterval(() => {
-    remaining--;
-    if (remaining <= 0) {
-      clearInterval(iv);
-      overlay.classList.remove('active');
-      beepGo();
-      onDone();
-    } else {
-      numEl.textContent = remaining;
-      numEl.style.animation = 'none';
-      void numEl.offsetWidth;
-      numEl.style.animation = 'countPulse 0.6s cubic-bezier(0.2, 0, 0.2, 1)';
-      beepCountdown();
-    }
-  }, 1000);
-}
 
-function runTimer(w) {
-  showScreen('timer');
-  paused = false; totalPaused = 0;
-  const phases = [];
-  for (let s = 0; s < w.sets; s++) {
-    for (let r = 0; r < w.rounds; r++) {
-      phases.push({ type:'work', duration:w.workSec, round:r+1, set:s+1 });
-      if (r < w.rounds-1 || s < w.sets-1) {
-        if (w.restSec > 0) phases.push({ type:'rest', duration:w.restSec, round:r+1, set:s+1 });
+  // Drive the countdown from wall-clock time too, so a hidden tab doesn't stall it.
+  const endAt = performance.now() + secs * 1000;
+  let shown = null;
+  const render = () => {
+    const remaining = Math.max(0, (endAt - performance.now()) / 1000);
+    const n = Math.ceil(remaining - 1e-6);
+    if (n !== shown) {
+      shown = n;
+      if (n > 0) {
+        numEl.textContent = n;
+        numEl.style.animation = 'none';
+        void numEl.offsetWidth;
+        numEl.style.animation = 'countPulse 0.6s cubic-bezier(0.2, 0, 0.2, 1)';
+        beepCountdown();
+        if (n <= 3) speak(String(n));
       }
     }
-    if (s < w.sets-1 && w.setRestSec > 0) {
-      if (phases.length > 0 && phases[phases.length-1].type === 'rest') phases.pop();
-      phases.push({ type:'setRest', duration:w.setRestSec, set:s+1 });
+    if (remaining <= 0) {
+      cancelCountdown();
+      beepGo();
+      speak('Go');
+      onDone();
     }
-  }
-  timerState = { workout:w, phases, phaseIdx:0, phaseStart:performance.now() };
-  updateTimerUI();
-  timerRaf = requestAnimationFrame(timerTick);
+  };
+  render();
+  countdownTimer = setInterval(render, 100);
 }
 
-function timerTick(now) {
-  if (!timerState) return;
-  if (paused) { timerRaf = requestAnimationFrame(timerTick); return; }
+function cancelCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  document.getElementById('countdownOverlay').classList.remove('active');
+  if (!st) releaseWakeLock();
+}
 
-  const phase = timerState.phases[timerState.phaseIdx];
-  const elapsed = (now - timerState.phaseStart - totalPaused) / 1000;
-  const remaining = Math.max(0, phase.duration - elapsed);
-  const secs = Math.ceil(remaining);
+function runTimer(w, phases) {
+  showScreen('timer');
+
+  const offsets = [0];
+  phases.forEach(p => offsets.push(offsets[offsets.length - 1] + p.duration));
+
+  st = {
+    workout: w,
+    phases,
+    offsets,
+    total: offsets[offsets.length - 1],
+    idx: 0,
+    base: 0,                      // elapsed seconds banked before the current run segment
+    t0: performance.now(),        // when the current run segment started
+    running: true,
+    lastCueKey: null,
+    skipCues: false,              // set while catching up after being backgrounded
+    finished: false,
+  };
+
+  document.getElementById('timer').classList.remove('is-paused');
+  renderRoundDots();
+  renderPhase();
+  announcePhase(st.phases[0]);
+  if (rafId) cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(tick);
+}
+
+function elapsedSec() {
+  if (!st) return 0;
+  return st.base + (st.running ? (performance.now() - st.t0) / 1000 : 0);
+}
+
+function tick() {
+  rafId = null;
+  if (!st || st.finished) return;
+
+  const e = Math.min(elapsedSec(), st.total);
+
+  if (e >= st.total) { finishWorkout(); return; }
+
+  const prevIdx = st.idx;
+  let idx = st.idx;
+  while (idx < st.phases.length - 1 && e >= st.offsets[idx + 1]) idx++;
+
+  // A multi-phase jump means we were throttled or the user skipped; in either
+  // case replaying every intermediate beep is wrong.
+  const jumped = st.skipCues || idx - prevIdx > 1;
+
+  if (idx !== prevIdx) {
+    st.idx = idx;
+    renderPhase();
+    renderRoundDots();
+    if (!jumped) announcePhase(st.phases[idx]);
+  }
+
+  const phase = st.phases[idx];
+  const phaseElapsed = e - st.offsets[idx];
+  const remaining = Math.max(0, st.offsets[idx + 1] - e);
+  const secs = Math.max(0, Math.ceil(remaining - 1e-6));
 
   document.getElementById('timerDisplay').textContent = formatTime(secs);
-  document.getElementById('timerProgress').style.width = ((1 - remaining / phase.duration) * 100) + '%';
+  document.getElementById('timerTotal').textContent = `${formatTime(st.total - e)} left · ${formatTime(e)} done`;
 
-  const prev = Math.ceil(remaining + 0.1);
-  if (secs <= 3 && secs > 0 && secs !== prev) beepCountdown();
+  const frac = phase.duration > 0 ? Math.min(1, phaseElapsed / phase.duration) : 1;
+  document.getElementById('ringFg').style.strokeDashoffset = (RING_CIRCUMFERENCE * frac).toFixed(2);
 
-  if (remaining <= 0) {
-    timerState.phaseIdx++;
-    totalPaused = 0;
-    if (timerState.phaseIdx >= timerState.phases.length) {
-      beepComplete();
-      const t = document.getElementById('timer');
-      document.getElementById('timerPhase').textContent = 'COMPLETE';
-      document.getElementById('timerDisplay').innerHTML = '&#10003;';
-      document.getElementById('timerInfo').textContent = 'Great workout!';
-      t.className = 'screen active phase-complete';
-      document.getElementById('timerProgress').style.width = '100%';
-      document.getElementById('timerControls').innerHTML = '<button class="btn-timer primary" onclick="stopTimer()">Done</button>';
-      return;
+  // One cue per (phase, second) — never more. The previous implementation
+  // compared ceil(remaining) with ceil(remaining + 0.1), which is true for a
+  // ~0.1s window every second and therefore fired a beep on every frame inside
+  // that window (roughly six overlapping beeps per second at 60fps).
+  const cueKey = idx + ':' + secs;
+  if (cueKey !== st.lastCueKey) {
+    const first = st.lastCueKey === null;
+    st.lastCueKey = cueKey;
+    if (!jumped && !first && secs >= 1 && secs <= 3) {
+      beepCountdown();
+      speak(String(secs));
     }
-    beepPhaseChange();
-    timerState.phaseStart = now;
-    updateTimerUI();
   }
-  timerRaf = requestAnimationFrame(timerTick);
+
+  st.skipCues = false;
+  rafId = requestAnimationFrame(tick);
 }
 
-function updateTimerUI() {
-  const phase = timerState.phases[timerState.phaseIdx];
-  const w = timerState.workout;
-  const t = document.getElementById('timer');
+const PHASE_META = {
+  warmup:   { label: 'WARM-UP',   cls: 'phase-warmup',   color: 'var(--orange)', say: 'Warm up' },
+  work:     { label: 'WORK',      cls: 'phase-work',     color: 'var(--green)',  say: 'Work' },
+  rest:     { label: 'REST',      cls: 'phase-rest',     color: 'var(--red)',    say: 'Rest' },
+  setRest:  { label: 'SET REST',  cls: 'phase-setrest',  color: 'var(--blue)',   say: 'Set rest' },
+  cooldown: { label: 'COOL-DOWN', cls: 'phase-cooldown', color: 'var(--blue)',   say: 'Cool down' },
+};
+
+function renderPhase() {
+  const phase = st.phases[st.idx];
+  const w = st.workout;
+  const meta = PHASE_META[phase.type];
+
+  const screen = document.getElementById('timer');
+  screen.className = 'screen active ' + meta.cls + (st.running ? '' : ' is-paused');
+
   const phaseEl = document.getElementById('timerPhase');
-  const infoEl = document.getElementById('timerInfo');
+  phaseEl.textContent = meta.label;
+  phaseEl.style.color = meta.color;
 
-  document.getElementById('timerDisplay').textContent = formatTime(phase.duration);
+  const parts = [];
+  if (phase.round) parts.push(`Round ${phase.round} of ${w.rounds}`);
+  if (phase.set && w.sets > 1) parts.push(`Set ${phase.set} of ${w.sets}`);
+  document.getElementById('timerInfo').textContent = parts.join('  ·  ');
 
-  if (phase.type === 'work') {
-    t.className = 'screen active phase-work';
-    phaseEl.textContent = 'WORK';
-    phaseEl.style.color = 'var(--green)';
-  } else if (phase.type === 'rest') {
-    t.className = 'screen active phase-rest';
-    phaseEl.textContent = 'REST';
-    phaseEl.style.color = 'var(--red)';
+  document.getElementById('btnPrev').disabled = false;
+  document.getElementById('btnNext').disabled = false;
+}
+
+function announcePhase(phase) {
+  beepPhaseChange();
+  speak(PHASE_META[phase.type].say);
+}
+
+// One dot per work interval across the whole workout, so position is legible
+// at a glance from across the room.
+function renderRoundDots() {
+  const container = document.getElementById('roundDots');
+  const workIdx = [];
+  st.phases.forEach((p, i) => { if (p.type === 'work') workIdx.push(i); });
+
+  if (workIdx.length > 40) { container.innerHTML = ''; return; }
+
+  container.innerHTML = workIdx.map(i => {
+    const cls = i < st.idx ? 'done' : (i === st.idx ? 'current' : '');
+    return `<div class="dot ${cls}"></div>`;
+  }).join('');
+}
+
+function setRunning(run) {
+  if (!st || st.running === run) return;
+  if (run) {
+    st.t0 = performance.now();
+    st.running = true;
+    requestWakeLock();
   } else {
-    t.className = 'screen active phase-setrest';
-    phaseEl.textContent = 'SET REST';
-    phaseEl.style.color = 'var(--blue)';
+    st.base = elapsedSec();
+    st.running = false;
   }
-
-  const roundText = phase.round ? `Round ${phase.round} of ${w.rounds}` : '';
-  const setText = w.sets > 1 ? `Set ${phase.set} of ${w.sets}` : '';
-  infoEl.textContent = [roundText, setText].filter(Boolean).join('  \u00b7  ');
-
-  document.getElementById('timerControls').innerHTML =
-    '<button class="btn-timer primary" id="btnPlayPause" onclick="togglePause()">Pause</button>' +
-    '<button class="btn-timer secondary" onclick="stopTimer()">Stop</button>';
+  document.getElementById('timer').classList.toggle('is-paused', !st.running);
+  document.getElementById('btnPlayPause').textContent = st.running ? 'Pause' : 'Resume';
 }
 
 function togglePause() {
-  if (!timerState) return;
-  paused = !paused;
-  if (paused) { pauseStart = performance.now(); document.getElementById('btnPlayPause').textContent = 'Resume'; }
-  else { totalPaused += performance.now() - pauseStart; document.getElementById('btnPlayPause').textContent = 'Pause'; }
+  if (!st || st.finished) return;
+  setRunning(!st.running);
+}
+
+function skipPhase(dir) {
+  if (!st || st.finished) return;
+  let idx = st.idx;
+  if (dir > 0) {
+    idx += 1;
+    if (idx >= st.phases.length) { finishWorkout(); return; }
+  } else {
+    // Back once restarts the current phase if we're already into it — the
+    // behaviour every music player and interval timer has trained users to expect.
+    const into = elapsedSec() - st.offsets[st.idx];
+    idx = into > 2 ? st.idx : Math.max(0, st.idx - 1);
+  }
+  st.idx = idx;
+  st.base = st.offsets[idx];
+  st.t0 = performance.now();
+  st.lastCueKey = null;
+  st.skipCues = true;
+  renderPhase();
+  renderRoundDots();
+  buzz(25);
+}
+
+function finishWorkout() {
+  if (!st || st.finished) return;
+  st.finished = true;
+  st.running = false;
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+
+  beepComplete();
+  speak('Workout complete');
+
+  const screen = document.getElementById('timer');
+  screen.className = 'screen active phase-complete';
+  document.getElementById('timerPhase').textContent = 'COMPLETE';
+  document.getElementById('timerPhase').style.color = 'var(--purple)';
+  document.getElementById('timerDisplay').innerHTML = '&#10003;';
+  document.getElementById('timerInfo').textContent = 'Great workout!';
+  document.getElementById('timerTotal').textContent = `${formatTime(st.total)} · done`;
+  document.getElementById('ringFg').style.strokeDashoffset = '0';
+  document.querySelectorAll('#roundDots .dot').forEach(d => { d.className = 'dot done'; });
+
+  document.getElementById('btnPrev').disabled = true;
+  document.getElementById('btnNext').disabled = true;
+  document.getElementById('btnPlayPause').textContent = 'Done';
+  document.getElementById('btnPlayPause').onclick = stopTimer;
+
+  releaseWakeLock();
 }
 
 function stopTimer() {
-  timerState = null;
-  if (timerRaf) cancelAnimationFrame(timerRaf);
-  document.getElementById('timer').className = 'screen';
-  document.getElementById('timerProgress').style.width = '0';
-  showEditor();
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+  st = null;
+  releaseWakeLock();
+  try { speechSynthesis.cancel(); } catch {}
+
+  const screen = document.getElementById('timer');
+  screen.className = 'screen';
+  screen.classList.remove('is-paused');
+  document.getElementById('ringFg').style.strokeDashoffset = '0';
+  document.getElementById('roundDots').innerHTML = '';
+  const pp = document.getElementById('btnPlayPause');
+  pp.textContent = 'Pause';
+  pp.onclick = togglePause;
+
+  if (editingId) {
+    const w = loadWorkouts().find(x => x.id === editingId);
+    if (w) { showEditor(w); return; }
+  }
+  if (loadWorkouts().length > 0) showLibrary(); else showEditor();
 }
 
 // ── Wake Lock ──
 let wakeLock = null;
-async function requestWakeLock() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch {} }
-function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && timerState) requestWakeLock(); });
+async function requestWakeLock() {
+  try {
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    // The browser drops the lock whenever the page is hidden; clear our handle
+    // so the visibility handler can take a fresh one.
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch { wakeLock = null; }
+}
+function releaseWakeLock() {
+  try { if (wakeLock) wakeLock.release(); } catch {}
+  wakeLock = null;
+}
 
-const _start = startWorkout;
-startWorkout = id => { requestWakeLock(); _start(id); };
-const _stop = stopTimer;
-stopTimer = () => { releaseWakeLock(); _stop(); };
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (st && st.running) {
+    st.skipCues = true;   // suppress cues for the phases we slept through
+    requestWakeLock();
+    if (!rafId) rafId = requestAnimationFrame(tick);
+  }
+});
+
+// ── Keyboard (desktop) ──
+document.addEventListener('keydown', e => {
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  if (!st || st.finished) return;
+  if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+  else if (e.code === 'ArrowRight') { e.preventDefault(); skipPhase(1); }
+  else if (e.code === 'ArrowLeft') { e.preventDefault(); skipPhase(-1); }
+  else if (e.code === 'Escape') { e.preventDefault(); stopTimer(); }
+});
 
 // ── PWA ──
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 
 // ── Saved Count ──
 function updateSavedCount() {
@@ -936,11 +1558,11 @@ function updateSavedCount() {
 }
 
 // ── Init ──
-if (loadWorkouts().length > 0) {
-  showLibrary();
-} else {
-  updateSavedCount();
-}
+document.getElementById('ringFg').style.strokeDasharray = RING_CIRCUMFERENCE.toFixed(2);
+document.getElementById('wName').addEventListener('input', updateEditorTotal);
+renderSettings();
+updateEditorTotal();
+if (loadWorkouts().length > 0) showLibrary(); else updateSavedCount();
 </script>
 </body>
 </html>
